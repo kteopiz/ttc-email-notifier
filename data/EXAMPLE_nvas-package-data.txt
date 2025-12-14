@@ -1,0 +1,115 @@
+{
+    "help": "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/help_show?name=package_show",
+    "success": true,
+    "result": {
+        "author": "opendata@ttc.ca",
+        "author_email": "opendata@ttc.ca",
+        "civic_issues": [
+            "Mobility"
+        ],
+        "creator_user_id": "329e1506-b545-4fc7-a4ea-e614f220eea7",
+        "dataset_category": "Document",
+        "date_published": "2024-07-26 15:44:00.463583",
+        "excerpt": "This NVAS feed provides improved real-time next vehicle arrival predictions based scheduled and unscheduled route information on the recently installed TTC Bustime System. The feed provides next vehicle arrival information, including: vehicle locations, predicted arrival, departure times, and route definitions.",
+        "formats": [
+            "PDF",
+            "WEB"
+        ],
+        "id": "31edb669-70be-4da5-9dcc-b11cc2cfbf07",
+        "is_retired": false,
+        "isopen": false,
+        "last_refreshed": "2024-08-14 14:12:25.433768",
+        "license_id": "notspecified",
+        "license_title": "License not specified",
+        "maintainer": null,
+        "maintainer_email": "opendata@ttc.ca",
+        "metadata_created": "2024-07-26T15:43:40.082368",
+        "metadata_modified": "2024-08-14T14:12:26.070551",
+        "name": "ttc-bustime-real-time-next-vehicle-arrival-nvas",
+        "notes": "This NVAS feed provides improved real-time next vehicle arrival predictions based scheduled and unscheduled route information on the recently installed TTC Bustime System. The feed provides next vehicle arrival information, including: vehicle locations, predicted arrival, departure times, and route definitions.\r\n\r\nThe new GTFS/RT feed data can be found at the link below:\r\n\r\n[https://bustime.ttc.ca/gtfsrt](https://bustime.ttc.ca/gtfsrt)\r\n\r\nVehicle locations and next vehicle arrival & departure predictions are provided in close to real-time.\r\n\r\nThe new NVAS feed must be used in conjunction with a revised GTFS file for surface vehicles (Buses and Streetcars) only SurfaceGTFS.ZIP which can be found [here](https://open.toronto.ca/dataset/surface-routes-and-schedules-for-bustime/)",
+        "num_resources": 2,
+        "num_tags": 0,
+        "organization": {
+            "id": "6ed95875-f7d6-4200-964c-91024cc49cba",
+            "name": "city-of-toronto",
+            "title": "City of Toronto",
+            "type": "organization",
+            "description": "",
+            "image_url": "",
+            "created": "2022-03-10T15:38:51.044746",
+            "is_organization": true,
+            "approval_status": "approved",
+            "state": "active"
+        },
+        "owner_division": "Toronto Transit Commission",
+        "owner_email": "opendata@ttc.ca",
+        "owner_org": "6ed95875-f7d6-4200-964c-91024cc49cba",
+        "private": false,
+        "refresh_rate": "Real-time",
+        "state": "active",
+        "title": "TTC BusTime Real-Time Next Vehicle Arrival (NVAS)",
+        "topics": [
+            "Transportation"
+        ],
+        "type": "dataset",
+        "version": null,
+        "resources": [
+            {
+                "cache_last_updated": null,
+                "cache_url": null,
+                "created": "2024-07-26T15:44:00.530380",
+                "datastore_active": false,
+                "datastore_cache": [
+                    ""
+                ],
+                "datastore_resource_id": "",
+                "format": "web",
+                "hash": "",
+                "id": "7f9d1364-23c8-4208-90b0-6fc52e533cc2",
+                "is_datastore_cache_file": false,
+                "last_modified": null,
+                "metadata_modified": "2024-08-14T13:14:09.723409",
+                "mimetype": null,
+                "mimetype_inner": null,
+                "name": "BusTime API Docs",
+                "package_id": "31edb669-70be-4da5-9dcc-b11cc2cfbf07",
+                "position": 0,
+                "resource_type": null,
+                "size": null,
+                "state": "active",
+                "url": "https://bustime.ttc.ca/gtfsrt",
+                "url_type": null
+            },
+            {
+                "cache_last_updated": null,
+                "cache_url": null,
+                "created": "2024-08-14T14:12:25.544295",
+                "datastore_active": false,
+                "datastore_cache": [
+                    ""
+                ],
+                "datastore_resource_id": "",
+                "format": "PDF",
+                "hash": "",
+                "id": "68e74a6b-a516-4b6c-a489-894934c83ac2",
+                "is_datastore_cache_file": false,
+                "last_modified": "2024-08-14T14:12:25.433768",
+                "metadata_modified": "2024-08-14T14:12:26.080326",
+                "mimetype": "application/pdf",
+                "mimetype_inner": null,
+                "name": "Bustime API Docs",
+                "package_id": "31edb669-70be-4da5-9dcc-b11cc2cfbf07",
+                "position": 1,
+                "resource_type": null,
+                "size": 164554,
+                "state": "active",
+                "url": "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/31edb669-70be-4da5-9dcc-b11cc2cfbf07/resource/68e74a6b-a516-4b6c-a489-894934c83ac2/download/gtfs-realtime.pdf",
+                "url_type": "upload"
+            }
+        ],
+        "tags": [],
+        "groups": [],
+        "relationships_as_subject": [],
+        "relationships_as_object": []
+    }
+}
