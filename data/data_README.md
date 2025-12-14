@@ -21,8 +21,10 @@ Currently these are the packages that are used to supply data to this applicatio
 
 Shows the request process from package metadata to actual data
 
+= [Toronto Open Data docs page](https://open.toronto.ca/dataset/ttc-bustime-real-time-next-vehicle-arrival-nvas/)
+
 - [Shortcut to data page](https://bustime.ttc.ca/gtfsrt/)
-- [Real-time vehicle position data](https://bustime.ttc.ca/gtfsrt/vehicles?debug)
+- [Real-time vehicle position data dqwnload](https://bustime.ttc.ca/gtfsrt/vehicles?debug)
 
 ```python
 import json
