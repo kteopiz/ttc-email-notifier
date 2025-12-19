@@ -4,6 +4,9 @@ from pathlib import Path
 import io
 import zipfile
 
+# ensure in future running data feed fetches from route
+HOME_PATH = Path.cwd()
+
 TORONTO_OPEN_DATA_CKAN_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca"
 PACKAGE_SHOW_ACTION_URL = "/api/3/action/package_show"
 PACKAGE_METADATA_FETCH = TORONTO_OPEN_DATA_CKAN_URL + PACKAGE_SHOW_ACTION_URL
@@ -29,7 +32,7 @@ def get_ttc_routes_schedules():
     bin_buffer = io.BytesIO()
     bin_buffer.write(ttc_schedules_resource.content)
 
-    extract_dir_path = Path(__file__).parent / "static_gtfs_schedule_data"
+    extract_dir_path = HOME_PATH / "static_gtfs_schedule_data"
     extract_dir_path.mkdir(exist_ok=True)
 
     with zipfile.ZipFile(bin_buffer) as myzip:
@@ -90,7 +93,7 @@ def testing():
     bus_data_url = nvas_base_url + "/vehicles?debug"
 
     real_time_bus_data = requests.get(bus_data_url)
-    with open("curr_nvas.txt", "w", encoding='utf-8') as f:
+    with open("curr_nvas.proto", "w", encoding='utf-8') as f:
         f.write(real_time_bus_data.text)
 
         # FLOW
@@ -98,4 +101,5 @@ def testing():
         # if package doesnt exist then we're screwed can't expect any data
 
 if __name__ == '__main__':
-    pass
+    get_ttc_routes_schedules()
+    testing()
