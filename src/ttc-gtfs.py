@@ -3,13 +3,59 @@ import requests
 from pathlib import Path
 import io
 import zipfile
+from datetime import datetime, timezone
 
 # ensure in future running data feed fetches from route
 HOME_PATH = Path.cwd()
-
+DATA_PATH = HOME_PATH / "data"
 TORONTO_OPEN_DATA_CKAN_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca"
 PACKAGE_SHOW_ACTION_URL = "/api/3/action/package_show"
 PACKAGE_METADATA_FETCH = TORONTO_OPEN_DATA_CKAN_URL + PACKAGE_SHOW_ACTION_URL
+
+def parse_utc_iso(ts: str) -> datetime:
+    return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
+
+
+def update_ttc_routes_schedules_metadata():
+    cached_metadata = None
+    metadata_cache_path = DATA_PATH / "package_metadata" / "ttc_gtfs_latest.json"
+
+    # Always fetch latest package metadata
+    params = {"id": "ttc-routes-and-schedules"}
+    response = requests.get(PACKAGE_METADATA_FETCH, params=params)
+    api_payload = response.json()
+
+    if not api_payload["success"]:
+        raise RuntimeError("[ERROR]: Extreme failure, unable to create GTFS metadata cache")
+
+    fetched_metadata = api_payload["result"]
+    minimal_metadata = {
+            "name": fetched_metadata["name"],
+            "id": fetched_metadata["id"],
+            "metadata_modified": fetched_metadata["metadata_modified"],
+        }
+
+    try:
+        with open(metadata_cache_path, "r") as f:
+            cached_metadata = json.load(f)
+
+    # Cache does not exist — create it
+    except FileNotFoundError:
+        with open(metadata_cache_path, "w") as f:
+            json.dump(minimal_metadata, f, indent=2)
+        return
+
+    # Cache exists — compare timestamps
+    cached_modified_ts = cached_metadata["metadata_modified"]
+    remote_modified_ts = fetched_metadata["metadata_modified"]
+
+    cached_modified_time = parse_utc_iso(cached_modified_ts)
+    remote_modified_time = parse_utc_iso(remote_modified_ts)
+
+    # Data is stale update it
+    if remote_modified_time > cached_modified_time:
+        with open(metadata_cache_path, "w") as f:
+            json.dump(minimal_metadata, f, indent=2)
 
 def get_ttc_routes_schedules():
     resources = []
@@ -23,7 +69,7 @@ def get_ttc_routes_schedules():
            resource_metadata = requests.get(url).json()
            resources.append(resource_metadata)
            # From here, you can use the "url" attribute to download this file
-    
+
     for r in resources:
         data = r["result"]
         if data["id"] == 'cfb6b2b8-6191-41e3-bda1-b175c51148cb' and data["format"] == 'ZIP':
@@ -46,12 +92,9 @@ def get_ttc_routes_schedules():
 
 
 # auto refresh data later based on latest modified attr of pkg metadata
-def assert_latest_package_data(package_json):
-    latest_local_data = None
-
-    # needs a better name holy
-    with open('data_metadata.json'):
-        pass
+# Requires a CKAN package in JSOn format
+def assert_latest_package_data(package):
+    pass
 
 def testing():
     # Toronto Open Data API URL
@@ -101,5 +144,4 @@ def testing():
         # if package doesnt exist then we're screwed can't expect any data
 
 if __name__ == '__main__':
-    get_ttc_routes_schedules()
-    testing()
+    update_ttc_routes_schedules_metadata()
