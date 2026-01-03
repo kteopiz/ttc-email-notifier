@@ -15,7 +15,6 @@ PACKAGE_METADATA_FETCH = TORONTO_OPEN_DATA_CKAN_URL + PACKAGE_SHOW_ACTION_URL
 def parse_utc_iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
 
-
 def update_ttc_routes_schedules_metadata():
     cached_metadata = None
     metadata_cache_path = DATA_PATH / "package_metadata" / "ttc_gtfs_latest.json"
@@ -24,7 +23,6 @@ def update_ttc_routes_schedules_metadata():
     params = {"id": "ttc-routes-and-schedules"}
     response = requests.get(PACKAGE_METADATA_FETCH, params=params)
     api_payload = response.json()
-
     if not api_payload["success"]:
         raise RuntimeError("[ERROR]: Extreme failure, unable to create GTFS metadata cache")
 
@@ -33,6 +31,7 @@ def update_ttc_routes_schedules_metadata():
             "name": fetched_metadata["name"],
             "id": fetched_metadata["id"],
             "metadata_modified": fetched_metadata["metadata_modified"],
+            "last_refreshed": fetched_metadata["last_refreshed"]
         }
 
     try:
@@ -43,19 +42,32 @@ def update_ttc_routes_schedules_metadata():
     except FileNotFoundError:
         with open(metadata_cache_path, "w") as f:
             json.dump(minimal_metadata, f, indent=2)
-        return
+        return True
 
     # Cache exists — compare timestamps
-    cached_modified_ts = cached_metadata["metadata_modified"]
-    remote_modified_ts = fetched_metadata["metadata_modified"]
+    cached_metadata_update_ts = cached_metadata["metadata_modified"]
+    remote_metadata_update_ts = fetched_metadata["metadata_modified"]
 
-    cached_modified_time = parse_utc_iso(cached_modified_ts)
-    remote_modified_time = parse_utc_iso(remote_modified_ts)
+    cached_dataset_update_ts = cached_metadata["last_refreshed"]
+    remote_dataset_update_ts = fetched_metadata["last_refreshed"]
 
-    # Data is stale update it
-    if remote_modified_time > cached_modified_time:
+    # Time converted values for comparison
+    cached_metadata_update_time = parse_utc_iso(cached_metadata_update_ts)
+    remote_metadata_update_time = parse_utc_iso(remote_metadata_update_ts)
+
+    cached_dataset_update_time = parse_utc_iso(cached_dataset_update_ts)
+    remote_dataset_update_time = parse_utc_iso(remote_dataset_update_ts)
+
+    # If package metadata OR actual dataset has been modified since last record, update record
+    
+    record_is_stale = remote_metadata_update_time > cached_metadata_update_time or remote_dataset_update_time > cached_dataset_update_time
+
+    if record_is_stale:
         with open(metadata_cache_path, "w") as f:
             json.dump(minimal_metadata, f, indent=2)
+
+    # Signal update occured
+    return record_is_stale
 
 def get_ttc_routes_schedules():
     resources = []
