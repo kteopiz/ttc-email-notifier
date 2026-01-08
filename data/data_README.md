@@ -12,6 +12,7 @@ Currently these are the packages that are used to supply data to this applicatio
 | Package Name | Package ID | Docs | Update Frequency |
 | ----------- | ----------- | ----------- | ----------- |
 | TTC BusTime Real-Time Next Vehicle Arrival (NVAS) | ttc-bustime-real-time-next-vehicle-arrival-nvas | https://open.toronto.ca/dataset/ttc-bustime-real-time-next-vehicle-arrival-nvas/ | Real-time |
+| TTC Routes and Schedules | ttc-routes-and-schedules | https://open.toronto.ca/dataset/ttc-routes-and-schedules/ | Monthly |
 
 ---
 
