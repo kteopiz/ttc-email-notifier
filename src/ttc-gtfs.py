@@ -15,10 +15,13 @@ PACKAGE_METADATA_FETCH = TORONTO_OPEN_DATA_CKAN_URL + PACKAGE_SHOW_ACTION_URL
 def parse_utc_iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
 
-def update_ttc_routes_schedules_metadata():
-    cached_metadata = None
+def write_ttc_gtfs_metadata(metadata):
     metadata_cache_path = DATA_PATH / "package_metadata" / "ttc_gtfs_latest.json"
+    with open(metadata_cache_path, "w") as f:
+            json.dump(metadata, f, indent=2)
 
+
+def get_ttc_routes_schedules_metadata():
     # Always fetch latest package metadata
     params = {"id": "ttc-routes-and-schedules"}
     response = requests.get(PACKAGE_METADATA_FETCH, params=params)
@@ -26,13 +29,23 @@ def update_ttc_routes_schedules_metadata():
     if not api_payload["success"]:
         raise RuntimeError("[ERROR]: Extreme failure, unable to create GTFS metadata cache")
 
-    fetched_metadata = api_payload["result"]
+    metadata = api_payload["result"]
+    return metadata
+
+def check_ttc_routes_schedules_metadata() -> dict:
+    cached_metadata : dict = None
+    is_stale_metadata : bool = None
+    is_stale_route_data : bool = None
+    metadata_cache_path = DATA_PATH / "package_metadata" / "ttc_gtfs_latest.json"
+    fetched_metadata = get_ttc_routes_schedules_metadata() 
+
+    # Slice required data
     minimal_metadata = {
-            "name": fetched_metadata["name"],
-            "id": fetched_metadata["id"],
-            "metadata_modified": fetched_metadata["metadata_modified"],
-            "last_refreshed": fetched_metadata["last_refreshed"]
-        }
+        "name": fetched_metadata["name"],
+        "id": fetched_metadata["id"],
+        "metadata_modified": fetched_metadata["metadata_modified"],
+        "last_refreshed": fetched_metadata["last_refreshed"]
+    }
 
     try:
         with open(metadata_cache_path, "r") as f:
@@ -40,9 +53,14 @@ def update_ttc_routes_schedules_metadata():
 
     # Cache does not exist — create it
     except FileNotFoundError:
-        with open(metadata_cache_path, "w") as f:
-            json.dump(minimal_metadata, f, indent=2)
-        return True
+        write_ttc_gtfs_metadata(minimal_metadata)
+        # Pass along information and stale record
+        is_stale_metadata = True
+        is_stale_route_data = True
+        minimal_metadata["stale_metadata"] = is_stale_metadata
+        minimal_metadata["stale_route_data"] = is_stale_route_data
+
+        return minimal_metadata
 
     # Cache exists — compare timestamps
     cached_metadata_update_ts = cached_metadata["metadata_modified"]
@@ -59,15 +77,22 @@ def update_ttc_routes_schedules_metadata():
     remote_dataset_update_time = parse_utc_iso(remote_dataset_update_ts)
 
     # If package metadata OR actual dataset has been modified since last record, update record
-    
-    record_is_stale = remote_metadata_update_time > cached_metadata_update_time or remote_dataset_update_time > cached_dataset_update_time
+    is_stale_metadata = remote_metadata_update_time > cached_metadata_update_time 
+    is_stale_route_data = remote_dataset_update_time > cached_dataset_update_time
 
-    if record_is_stale:
-        with open(metadata_cache_path, "w") as f:
-            json.dump(minimal_metadata, f, indent=2)
+    # Stale metadata requires refresh of ALL data
+    if is_stale_metadata:
+        write_ttc_gtfs_metadata(minimal_metadata)
 
-    # Signal update occured
-    return record_is_stale
+        is_stale_route_data = is_stale_metadata
+        minimal_metadata["stale_metadata"] = is_stale_metadata
+        minimal_metadata["stale_route_data"] = is_stale_route_data
+        return minimal_metadata
+
+    minimal_metadata["stale_metadata"] = is_stale_metadata
+    minimal_metadata["stale_route_data"] = is_stale_route_data
+
+    return minimal_metadata
 
 def get_ttc_routes_schedules():
     resources = []
@@ -100,60 +125,24 @@ def get_ttc_routes_schedules():
                 with file_path.open("wb") as f:
                     f.write(myfile.read())
         
+def sim_cron():
+    is_stale_metadata : bool  = None
+    try:
+        is_stale_metadata = update_ttc_routes_schedules_metadata()
+    except RuntimeError:
+        print('do something about this, cron sleeps')
+    
+    # Try to save requests by pruning flow
+    # if MD is stale MUST update the resource
+    # if not we can just CHECK resource
 
-
-
-# auto refresh data later based on latest modified attr of pkg metadata
-# Requires a CKAN package in JSOn format
-def assert_latest_package_data(package):
-    pass
-
-def testing():
-    # Toronto Open Data API URL
-    toronto_open_data_ckan_url = "https://ckan0.cf.opendata.inter.prod-toronto.ca"
-
-    # Latest NVAS package metadata fetch, ensures using latest resources
-
-    # If this block returns NO data, not other error, then we have a CRITICAL discrepency between the docs, perhaps id has changed?
-    params = {"id": "ttc-bustime-real-time-next-vehicle-arrival-nvas"}
-    metadata_show_url = toronto_open_data_ckan_url + "/api/3/action/package_show"
-    package_metadata = requests.get(metadata_show_url, params=params).json()
-    # End critical failure
-
-    # if the data and docs align and this metadata DOES exist ensure our records exist
-    # check that ${id}_metadata.json exists -> if not make it 
-
-    # Why the metadata JSON? --> ensures our URLs are up to date as best as possible
-        # if the meta data has been modified AFTER our current records, we need to do 
-            # 1) update our URL in the JSON file
-            # 2) check current endpoints to see if they still work
-            # if current endpoints don't work we need to alert or log failures
-
-    # To get resource data:
-    for _, resource in enumerate(package_metadata["result"]["resources"]):
-
-        # To get actively updated data in the resource:
-        if not resource["datastore_active"]:
-            url = toronto_open_data_ckan_url + "/api/3/action/resource_show?id=" + resource["id"]
-            resource_metadata = requests.get(url).json()
-
-            # Print shows available data in the resource
-            print(resource_metadata)
-
-    # Resources ordered as [data, docs]
-    nvas_base_url = package_metadata["result"]["resources"][0]["url"]
-
-    # "vehicles" endpoint gives us real-time bus information
-    # comes in protobuf format, ?debug outputs in human-readable string
-    bus_data_url = nvas_base_url + "/vehicles?debug"
-
-    real_time_bus_data = requests.get(bus_data_url)
-    with open("curr_nvas.proto", "w", encoding='utf-8') as f:
-        f.write(real_time_bus_data.text)
-
-        # FLOW
-
-        # if package doesnt exist then we're screwed can't expect any data
+    # hit this case if MD DNE or MD is stale
+    if is_stale_metadata:
+        get_ttc_routes_schedules()
+        return # cron ends
+    else:
+        pass
+    # also except FNF
 
 if __name__ == '__main__':
-    update_ttc_routes_schedules_metadata()
+    pass
