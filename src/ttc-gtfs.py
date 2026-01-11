@@ -13,13 +13,14 @@ TORONTO_OPEN_DATA_CKAN_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca"
 PACKAGE_SHOW_ACTION_URL = "/api/3/action/package_show"
 PACKAGE_METADATA_FETCH = TORONTO_OPEN_DATA_CKAN_URL + PACKAGE_SHOW_ACTION_URL
 VALID_MODES = ['package', 'resource']
+
 # Data Service
 
 # Why do I need this? --> staleness check!
 # return type tbd? think i should return the entire object
 def get_cached_metadata(mode: str, filename: str):
     if mode not in VALID_MODES:
-        raise RuntimeError(f"[ERROR] Invalid mode ${mode}")
+        raise RuntimeError(f"[ERROR] Invalid mode: ${mode}")
 
     path = METADATA_PATH / mode / filename
     metadata = None
@@ -50,6 +51,48 @@ def fetch_remote_metadata(cached_data):
 
     sanitized_remote_metadata = raw_remote_metadata["result"]
     return sanitized_remote_metadata
+
+# Data Mutator
+
+# Future needs:
+# Actual data mutator? (NVAS protobuf, GTFS txts) -> later
+
+# Package OR Resource writer dependent on mode
+def write_metadata(mode: str, package_data, resource_id=None):
+  if mode not in VALID_MODES:
+      raise ValueError(f"[ERROR] Invalid mode: ${mode}")
+  if mode == 'resource' and not resource_id:
+      raise ValueError(f"[ERROR] Resource mode with invalid resource_id: ${resource_id}")
+
+  new_entry_metadata = None
+  path = METADATA_PATH / mode
+  id = ''
+  if mode == 'resource':
+      id = resource_id
+      resources = None
+      try:
+          resources = package_data["resources"]
+      except KeyError as e:
+        raise KeyError("[ERROR] Package data missing 'resources' field") from e
+      
+      for r in resources:
+          if r["id"] == resource_id:
+              new_entry_metadata = r
+              break
+      if not new_entry_metadata:
+          raise ValueError(f"[ERROR] No resource exists of ID: ${resource_id}")
+  else:
+      id = package_data["id"]
+      new_entry_metadata = package_data
+  
+  filename = f"${id}.json"
+  write_path = path / filename
+
+  with open(write_path, "w") as f:
+      json.dump(new_entry_metadata, f, indent=2)
+
+  # Does orchestration need return?
+  return True
 
 def parse_utc_iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
