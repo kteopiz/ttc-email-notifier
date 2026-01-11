@@ -17,5 +17,5 @@ __pycache__/
 
 # Live GTFS data feeds
 data/static_gtfs_schedule_data/*
-data/package_metadata/*
+data/metadata/*
 

@@ -8,9 +8,48 @@ from datetime import datetime, timezone
 # ensure in future running data feed fetches from route
 HOME_PATH = Path.cwd()
 DATA_PATH = HOME_PATH / "data"
+METADATA_PATH = DATA_PATH / "metadata"
 TORONTO_OPEN_DATA_CKAN_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca"
 PACKAGE_SHOW_ACTION_URL = "/api/3/action/package_show"
 PACKAGE_METADATA_FETCH = TORONTO_OPEN_DATA_CKAN_URL + PACKAGE_SHOW_ACTION_URL
+VALID_MODES = ['package', 'resource']
+# Data Service
+
+# Why do I need this? --> staleness check!
+# return type tbd? think i should return the entire object
+def get_cached_metadata(mode: str, filename: str):
+    if mode not in VALID_MODES:
+        raise RuntimeError(f"[ERROR] Invalid mode ${mode}")
+
+    path = METADATA_PATH / mode / filename
+    metadata = None
+
+    try:
+        with open(path, 'r') as f:
+            metadata = json.load(f)
+    except FileNotFoundError:
+        print(f"[ERROR] File: ${filename} not found")
+    return metadata
+
+# What scenarios do I have to fetch data?
+  # staleness check, temp data to compare -> return package as a whole
+  # mutator might need to overwrite:
+    # overwrite package data -> return package as a whole
+    # overwrite resource data -> return resource["id"] in package
+    # if pkg data stale though -> overwrite both
+
+# If persistent data is fresh, I can rely on it to fuel my fetches
+# still for fetches whether we update package or resource we need the package
+def fetch_remote_metadata(cached_data):
+    params = {"id": cached_data["id"]}
+    raw_remote_metadata = requests.get(PACKAGE_METADATA_FETCH, params=params).json()
+
+    if not raw_remote_metadata["success"]:
+        # raise some error -> orchestration can catch and alert of inaccuracy on site
+        print('fetch failed smth wrong with fetch')
+
+    sanitized_remote_metadata = raw_remote_metadata["result"]
+    return sanitized_remote_metadata
 
 def parse_utc_iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
@@ -94,11 +133,24 @@ def check_ttc_routes_schedules_metadata() -> dict:
 
     return minimal_metadata
 
+def update_ttc_routes_schedules_data(metadata):
+    is_stale_metadata = metadata["stale_metadata"]
+    is_stale_route_data = metadata["stale_route_data"]
+    
+    should_update_data = is_stale_metadata or is_stale_route_data
+
+    # must update data if MD is stale
+    if should_update_data:
+        get_ttc_routes_schedules()
+
 def get_ttc_routes_schedules():
     resources = []
     ttc_schedules_resource = None
     params = {"id": "ttc-routes-and-schedules"}
     ttc_routes_schedules_package = requests.get(PACKAGE_METADATA_FETCH, params=params).json()
+    with open('test.json', 'w') as f:
+        json.dump(ttc_routes_schedules_package, f, indent=2)
+    return 
     for _, resource in enumerate(ttc_routes_schedules_package["result"]["resources"]):
            # To get metadata for non datastore_active resources:
        if not resource["datastore_active"]:
@@ -126,9 +178,20 @@ def get_ttc_routes_schedules():
                     f.write(myfile.read())
         
 def sim_cron():
+
+    # what does the data look like?
+        # not a checker its a data reader
+        # Data Reader
+    # is anything stale?
+        # don't read decide, based on read data from above, signal staleness
+        # Validity/Staleness service
+    # refresh stale data
+        # the refreshing service, recieve signal and act
+        # Data Mutator
+
     is_stale_metadata : bool  = None
     try:
-        is_stale_metadata = update_ttc_routes_schedules_metadata()
+        is_stale_metadata = check_ttc_routes_schedules_metadata()
     except RuntimeError:
         print('do something about this, cron sleeps')
     
@@ -145,4 +208,4 @@ def sim_cron():
     # also except FNF
 
 if __name__ == '__main__':
-    pass
+    get_ttc_routes_schedules()

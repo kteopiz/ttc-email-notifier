@@ -16,6 +16,26 @@ Currently these are the packages that are used to supply data to this applicatio
 
 ---
 
+## Storing Data
+
+### Metadata
+
+In metadata/{resource|package}, save copies of non-stale metadata for future usage,
+idea is to reduce number of requests made to open data by keeping fresh records
+
+For example to access actual data the flow is:
+request package (metadata)-> parse package for resource metadata -> request actual data from URL in resource metadata
+
+By saving metadata, we have access to URL within file system therefore we can:
+access request URL from cached metadata -> request data via URL
+
+Rule for writing to metadata:
+
+- CKAN packages: Write the result : {} part of the CKAN package
+- CKAN resources: Write the desired resource from its package via resource["id"]
+
+---
+
 ## Data Usage Examples
 
 ### Real-time NVAS package and resource fetch
